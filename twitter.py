@@ -5,7 +5,6 @@ import socket
 import http.client
 
 from datetime import datetime
-from hanziconv import HanziConv
 
 from tweepy import OAuthHandler, Stream
 from tweepy.streaming import StreamListener
@@ -82,16 +81,7 @@ class QueueListener(StreamListener):
                     pcnt += 1
         self.num_handled += pcnt
 
-
-    is_zh = re.compile(r'([\p{IsHan}]+)', re.UNICODE)
-    def preprocess(self, line, cond=None):
-        line = HanziConv.toTraditional(line)
-        # line = re.sub(r"\@[a-z0-9][a-z0-9]*", '', line)
-        # line = re.sub(r"\#[a-z0-9][a-z0-9]*", '', line)
-        # line = re.split(r"\([a-z][a-z]\)", line.lower())[0]
-        if cond == 'only_zh':
-            words = [w for w in jieba.cut(line) if is_zh.search(w)]
-            line = ' '.join(words)
+    def preprocess(self, line):
         line = re.sub("\s+", ' ', line).strip().lower()
         return line
 
@@ -112,7 +102,7 @@ def main():
     elif args.lang == 'zh':
         stream.filter(languages=["zh"], track=['I', 'you', 'http', 'www', 'co', '@', '#', '。', '，', '！', '.', '!', ',', ':', '：', '』', ')', '...', '我', '你', '他', '哈', '的', '是', '人', '-', '/'])
     elif args.lang == 'ja':
-        stream.filter(languages=["ja"], track=['I', 'you', 'http', 'www', 'co', '@', '#', '。', '，', '！', '.', '!', ',', ':', '：', '』', ')', '...'])
+        stream.filter(languages=["ja"], track=['私', '俺', 'わたし', 'おれ', 'ぼく', '僕', 'http', 'www', 'co', '@', '#', '。', '，', '！', '.', '!', ',', ':', '：', '』', ')', '...', 'これ'])
     # stream.filter(locations=[-122.75,36.8,-121.75,37.8])  # San Francisco
     # stream.filter(locations=[-74,40,-73,41])  # New York City
     # stream.filter(languages=["en"], track=['python', 'obama', 'trump'])
