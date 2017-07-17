@@ -4,3 +4,4 @@ go_*
 *.yaml
 *.yml
 .idea
+corpus
