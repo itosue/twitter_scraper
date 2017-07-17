@@ -1,8 +1,7 @@
 import sqlite3
-import os
 from datetime import datetime
 
-DB_NAME = os.getenv("HOME") + "/Google Drive/all_tweets.db"
+DB_NAME = ''
 
 
 def tweet_datetime_to_unixtime(tweet_datetime):

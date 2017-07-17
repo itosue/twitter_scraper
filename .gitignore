@@ -5,3 +5,4 @@ go_*
 *.yml
 .idea
 corpus
+.DS_Store

@@ -90,11 +90,13 @@ def main():
     # parser
     parser = argparse.ArgumentParser()
     parser.add_argument('--lang', type=str, required=True, help='language: en/zh/ja')
+    parser.add_argument('--db', type=str, required=True, help='path to sqlite3 db')
     args = parser.parse_args()
 
     # open stream
     listener = QueueListener(args)
     stream = Stream(listener.auth, listener) #, language='zh')
+    saver.DB_NAME=args.db
 
     # [stream filter]
     if args.lang == 'en':
