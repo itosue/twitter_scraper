@@ -3,6 +3,7 @@ import tweepy
 import time
 import socket
 import http.client
+import sqlite3_saver as saver
 
 from datetime import datetime
 
@@ -14,6 +15,12 @@ from tweepy.streaming import StreamListener
 tcpip_delay = 0.25
 MAX_TCPIP_TIMEOUT = 16
 
+# TODO
+# create table
+# insert reply and text
+# config to sqlite3 dir
+# Move it Desktop
+# Design for how we can utilize more data in tweet
 
 class QueueListener(StreamListener):
 
@@ -50,7 +57,8 @@ class QueueListener(StreamListener):
     def on_status(self, raw):
         if isinstance(raw.get('in_reply_to_status_id'), int):
             print("(%s)%s / %i" % (raw['in_reply_to_status_id'], raw['text'], len(self.queue)))
-            line = (raw.get('in_reply_to_status_id'), raw.get("text"))
+#            line = (raw.get('in_reply_to_status_id'), raw.get("text"))
+            line = (raw.get('in_reply_to_status_id'), raw)
             self.queue.append(line)
             if len(self.queue) >= self.batch_size: self.dump()
         return True
@@ -62,28 +70,20 @@ class QueueListener(StreamListener):
         print('ON LIMIT:', track)
 
     def dump(self):
-        pcnt = 0
-        with open(self.dumpfile, 'a') as fdump:
-            (sids, texts), self.queue = zip(*self.queue), []
-            while True:
-                try:
-                    lines_mapper = {s.id_str: s.text for s in self.api.statuses_lookup(sids)}
-                    break
-                except Exception as e:
-                    print("[Error]", e)
-                    time.sleep(10)
-            lines_grps = [[lines_mapper.get(str(sid)), txt] for sid, txt in zip(sids, texts) if lines_mapper.get(str(sid))]
-            lines_grps = [[self.preprocess(s) for s in lines] for lines in lines_grps]
-            
-            for lines in lines_grps:
-                for i in range(len(lines)-1):
-                    fdump.write("%s\n%s\n" % (lines[i], lines[i+1]))
-                    pcnt += 1
-        self.num_handled += pcnt
-
-    def preprocess(self, line):
-        line = re.sub("\s+", ' ', line).strip().lower()
-        return line
+        (sids, tweets), self.queue = zip(*self.queue), []
+        while True:
+            try:
+                lines_mapper = {s.id_str: s._json for s in self.api.statuses_lookup(sids)}
+                break
+            except Exception as e:
+                print("[Error]", e)
+                time.sleep(10)
+        lines_grps = [[lines_mapper.get(str(sid)), tweet] for sid, tweet in zip(sids, tweets) if lines_mapper.get(str(sid))]
+        print("INSERT")
+        for lines in lines_grps:
+            for i in range(len(lines)-1):
+                saver.insert_tweet(lines[i])
+                saver.insert_tweet(lines[i + 1])
 
 
 def main():
