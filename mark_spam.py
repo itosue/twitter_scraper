@@ -1,6 +1,5 @@
 import sqlite3
 import argparse
-import sys
 
 
 def select_likely_spam(db):

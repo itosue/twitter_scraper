@@ -10,6 +10,13 @@ create table status(
 
 CREATE INDEX in_reply_to_status_id ON status (in_reply_to_status_id);
 
+alter table status add column is_spam integer NOT NULL default 0;
+CREATE INDEX is_spam ON status (is_spam);
+
+CREATE INDEX text_is_spam ON status (text, is_spam);
+
+CREATE INDEX text ON status (text);
+
 create table user(
   id integer NOT NULL,
   screen_name varchar(128) UNIQUE,

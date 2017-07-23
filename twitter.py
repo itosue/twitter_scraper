@@ -96,7 +96,7 @@ def main():
     # open stream
     listener = QueueListener(args)
     stream = Stream(listener.auth, listener) #, language='zh')
-    saver.DB_NAME=args.db
+    saver.DB_NAME = args.db
 
     # [stream filter]
     if args.lang == 'en':
@@ -104,7 +104,7 @@ def main():
     elif args.lang == 'zh':
         stream.filter(languages=["zh"], track=['I', 'you', 'http', 'www', 'co', '@', '#', '。', '，', '！', '.', '!', ',', ':', '：', '』', ')', '...', '我', '你', '他', '哈', '的', '是', '人', '-', '/'])
     elif args.lang == 'ja':
-        stream.filter(languages=["ja"], track=['私', '俺', 'わたし', 'おれ', 'ぼく', '僕', 'http', 'www', 'co', '@', '#', '。', '，', '！', '.', '!', ',', ':', '：', '』', ')', '...', 'これ'])
+        stream.filter(languages=["ja"], track=['「', '」', '私', '俺', 'わたし', 'おれ', 'ぼく', '僕', 'http', 'www', 'co', '@', '#', '。', '，', '！', '.', '!', ',', ':', '：', '』', ')', '...', 'これ'])
     # stream.filter(locations=[-122.75,36.8,-121.75,37.8])  # San Francisco
     # stream.filter(locations=[-74,40,-73,41])  # New York City
     # stream.filter(languages=["en"], track=['python', 'obama', 'trump'])
