@@ -46,17 +46,21 @@ class QueueListener(StreamListener):
                 if len(statues) == 0:
                     return
                 prev_prev = statues[0]
-                if prev_prev.user.id != status.user.id:
+                # this should initiate the conversation
+                if self.has_in_reply_to(
+                        prev_prev) or prev_prev.user.id != status.user.id:
                     return
-                self.print_conversation(status, prev, prev_prev)
-                self.insert_conversation(status, prev, prev_prev)
+                self.print_conversation(prev_prev, prev, status)
+                self.insert_conversation(prev_prev, prev, status)
 
-    def print_conversation(self, status, prev, prev_prev):
+    def print_conversation(self, prev_prev, prev, status):
         print("================================================================"
-              "\n{}\n{}\n{}".format(self.sanitize_text(status.text),
-                                    self.sanitize_text(prev.text),
-                                    self.sanitize_text(
-                                        prev_prev.text)))
+              "\n{}:{}\n{}:{}\n{};{}".format(prev_prev.id,
+                                             self.sanitize_text(prev_prev.text),
+                                             prev.id,
+                                             self.sanitize_text(prev.text),
+                                             status.id,
+                                             self.sanitize_text(status.text)))
 
     def insert_conversation(self, status1, status2, status3):
         for status in [status1, status2, status3]:
@@ -64,7 +68,6 @@ class QueueListener(StreamListener):
 
         conn = sqlite3.connect(self.db)
         c = conn.cursor()
-        print("{} {} {}".format(status1.id, status2.id, status3.id))
         try:
             c.execute(
                 "insert into conversation (sid1, sid2, sid3) values (?, ?, ?)",
