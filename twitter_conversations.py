@@ -48,12 +48,15 @@ class QueueListener(StreamListener):
                 prev_prev = statues[0]
                 if prev_prev.user.id != status.user.id:
                     return
-                print("========================================================"
-                      "\n{}\n{}\n{}".format(self.sanitize_text(status.text),
-                                            self.sanitize_text(prev.text),
-                                            self.sanitize_text(
-                                                prev_prev.text)))
+                self.print_conversation(status, prev, prev_prev)
                 self.insert_conversation(status, prev, prev_prev)
+
+    def print_conversation(self, status, prev, prev_prev):
+        print("================================================================"
+              "\n{}\n{}\n{}".format(self.sanitize_text(status.text),
+                                    self.sanitize_text(prev.text),
+                                    self.sanitize_text(
+                                        prev_prev.text)))
 
     def insert_conversation(self, status1, status2, status3):
         for status in [status1, status2, status3]:
