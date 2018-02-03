@@ -8,6 +8,14 @@ create table status(
   CONSTRAINT status_id PRIMARY KEY (id)
 );
 
+create table conversation(
+  sid1 integer NOT NULL,
+  sid2 integer NOT NULL,
+  sid3 integer NOT NULL,
+  CONSTRAINT converstaion_id PRIMARY KEY (sid1, sid2, sid3)
+);
+
+
 CREATE INDEX in_reply_to_status_id ON status (in_reply_to_status_id);
 
 alter table status add column is_spam integer NOT NULL default 0;

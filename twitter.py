@@ -33,7 +33,13 @@ class QueueListener(StreamListener):
         self.lang = args.lang
 
         # tweepy
-        cfg = yaml.load(open('config.yml', 'rt'))['twitter']
+        f = ''
+        if args.config:
+            f = open(args.config, 'rt')
+        else:
+            f = open('config.yml', 'rt')
+
+        cfg = yaml.load(f)['twitter']
         self.auth = OAuthHandler(cfg['consumer_key'], cfg['consumer_secret'])
         self.auth.set_access_token(cfg['access_token'], cfg['access_token_secret'])
         self.api = tweepy.API(self.auth)
@@ -41,7 +47,7 @@ class QueueListener(StreamListener):
         # corpus file
         if not os.path.exists('corpus'): os.makedirs('corpus')
         self.dumpfile = "corpus/%s_%s.txt" % (self.lang, datetime.now().strftime("%Y%m%d_%H%M%S"))
-        
+
 
     def on_data(self, data):
         """Routes the raw stream data to the appropriate method."""
@@ -91,6 +97,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--lang', type=str, required=True, help='language: en/zh/ja')
     parser.add_argument('--db', type=str, required=True, help='path to sqlite3 db')
+    parser.add_argument('--config', type=str, required=False, help='config file path')
     args = parser.parse_args()
 
     # open stream
@@ -108,7 +115,7 @@ def main():
     # stream.filter(locations=[-122.75,36.8,-121.75,37.8])  # San Francisco
     # stream.filter(locations=[-74,40,-73,41])  # New York City
     # stream.filter(languages=["en"], track=['python', 'obama', 'trump'])
-    # 
+    #
     # stream.filter(languages=["zh"], locations=[-180,-90,180,90])
     # stream.filter(languages=["ja"], track=['バイト'])
 
