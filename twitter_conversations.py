@@ -2,11 +2,29 @@ import argparse
 import re
 import sqlite3
 import sys
+from enum import Enum
 
 import tweepy
 import yaml
 from tweepy import OAuthHandler, Stream
 from tweepy.streaming import StreamListener
+
+
+class TaskState(Enum):
+    WAITING_STATUS1 = 1
+    WAITING_STATUS2 = 2
+    DONE = 3
+
+# statuses_look API accepts up to 100 status ids
+MAX_NUM_SIDS = 100
+
+# A class represents following conversation using in_reply_to_status_id
+class FollowConversationTask:
+    def __init__(self, status3):
+        self.status3 = status3
+        self.status2 = None
+        self.status1 = None
+        self.state = TaskState.WAITING_STATUS2
 
 
 class QueueListener(StreamListener):
@@ -22,6 +40,8 @@ class QueueListener(StreamListener):
                                    cfg['access_token_secret'])
         self.api = tweepy.API(self.auth)
         self.db = args.db
+        self.sids_to_lookup = []
+        self.tasks = {}
 
     @staticmethod
     def is_ja_tweet(status):
@@ -31,36 +51,74 @@ class QueueListener(StreamListener):
     def has_in_reply_to(status):
         return isinstance(status.in_reply_to_status_id, int)
 
-    def on_status(self, status):
-        if self.is_ja_tweet(status) and self.has_in_reply_to(status):
+    def add_task(self, status3):
+        self.sids_to_lookup.append(status3.in_reply_to_status_id)
+        print("task queue {}".format(len(self.sids_to_lookup)))
+        self.tasks[status3.in_reply_to_status_id] = FollowConversationTask(
+            status3)
+        if len(self.sids_to_lookup) >= MAX_NUM_SIDS:
+            print("Issue API")
+            statues = self.api.statuses_lookup(self.sids_to_lookup)
+            self.sids_to_lookup = []
+            for status in statues:
+                task = self.tasks[status.id]
+                if task.state == TaskState.WAITING_STATUS2:
+                    task.status2 = status
+                    del self.tasks[status.id]
+                    if task.status3.user.id == task.status2.user.id or not self.has_in_reply_to(
+                            status):
+                        continue
+                    else:
+                        task.state = TaskState.WAITING_STATUS1
+                        self.tasks[status.in_reply_to_status_id] = task
+                        self.sids_to_lookup.append(
+                            status.in_reply_to_status_id)
+                elif task.state == TaskState.WAITING_STATUS1:
+                    task.status1 = status
+                    del self.tasks[status.id]
+                    if task.status1.user.id != task.status3.user.id or self.has_in_reply_to(
+                            status):
+                        continue
+                    else:
+                        task.state = TaskState.DONE
+                        self.print_conversation(task.status1, task.status2,
+                                                task.status3)
+                        self.insert_conversation(task.status1, task.status2,
+                                                 task.status3)
 
-            statues = self.api.statuses_lookup([status.in_reply_to_status_id])
-            if len(statues) == 0:
-                return
-            prev = statues[0]
-            if prev.user.id == status.user.id:
-                return
+    def on_status(self, status3):
+        if self.is_ja_tweet(status3) and self.has_in_reply_to(status3):
+            self.add_task(status3)
 
-            if self.has_in_reply_to(prev):
-                statues = self.api.statuses_lookup([prev.in_reply_to_status_id])
-                if len(statues) == 0:
-                    return
-                prev_prev = statues[0]
-                # this should initiate the conversation
-                if self.has_in_reply_to(
-                        prev_prev) or prev_prev.user.id != status.user.id:
-                    return
-                self.print_conversation(prev_prev, prev, status)
-                self.insert_conversation(prev_prev, prev, status)
+            #
+            # statues = self.api.statuses_lookup([status3.in_reply_to_status_id])
+            # if len(statues) == 0:
+            #     return
+            # status2 = statues[0]
+            # if status2.user.id == status3.user.id:
+            #     return
+            #
+            # if self.has_in_reply_to(status2):
+            #     statues = self.api.statuses_lookup([status2.in_reply_to_status_id])
+            #     if len(statues) == 0:
+            #         return
+            #     status1 = statues[0]
+            #     # this should initiate the conversation
+            #     if self.has_in_reply_to(
+            #             status1) or status1.user.id != status3.user.id:
+            #         return
 
-    def print_conversation(self, prev_prev, prev, status):
+            #     self.print_conversation(status1, status2, status3)
+            #     self.insert_conversation(status1, status2, status3)
+
+    def print_conversation(self, status1, status2, status3):
         print("================================================================"
-              "\n{}:{}\n{}:{}\n{};{}".format(prev_prev.id,
-                                             self.sanitize_text(prev_prev.text),
-                                             prev.id,
-                                             self.sanitize_text(prev.text),
-                                             status.id,
-                                             self.sanitize_text(status.text)))
+              "\n{}:{}\n{}:{}\n{};{}".format(status1.id,
+                                             self.sanitize_text(status1.text),
+                                             status2.id,
+                                             self.sanitize_text(status2.text),
+                                             status3.id,
+                                             self.sanitize_text(status3.text)))
 
     def insert_conversation(self, status1, status2, status3):
         for status in [status1, status2, status3]:
