@@ -1,4 +1,4 @@
-import os, sys, re, yaml, json, argparse
+import os, sys, re, yaml, json, argparse, signal
 import tweepy
 import time
 import socket
@@ -35,7 +35,7 @@ class QueueListener(StreamListener):
         # corpus file
         if not os.path.exists('corpus'): os.makedirs('corpus')
         self.dumpfile = "corpus/%s_%s.txt" % (self.lang, datetime.now().strftime("%Y%m%d_%H%M%S"))
-        
+
 
     def on_data(self, data):
         """Routes the raw stream data to the appropriate method."""
@@ -75,7 +75,7 @@ class QueueListener(StreamListener):
                     time.sleep(10)
             lines_grps = [[lines_mapper.get(str(sid)), txt] for sid, txt in zip(sids, texts) if lines_mapper.get(str(sid))]
             lines_grps = [[self.preprocess(s) for s in lines] for lines in lines_grps]
-            
+
             for lines in lines_grps:
                 for i in range(len(lines)-1):
                     fdump.write("%s\n%s\n" % (lines[i], lines[i+1]))
@@ -117,26 +117,31 @@ def main():
     # stream.filter(locations=[-122.75,36.8,-121.75,37.8])  # San Francisco
     # stream.filter(locations=[-74,40,-73,41])  # New York City
     # stream.filter(languages=["en"], track=['python', 'obama', 'trump'])
-    # 
+    #
     # stream.filter(languages=["zh"], locations=[-180,-90,180,90])
     # stream.filter(languages=["ja"], track=['バイト'])
 
+    # try:
+        # while True:
     try:
-        while True:
-            try:
-                stream.sample()  # blocking!
-            except KeyboardInterrupt:
-                print('KEYBOARD INTERRUPT')
-                return
-            except (socket.error, http.client.HTTPException):
-                global tcpip_delay
-                print('TCP/IP Error: Restarting after %.2f seconds.' % tcpip_delay)
-                time.sleep(min(tcpip_delay, MAX_TCPIP_TIMEOUT))
-                tcpip_delay += 0.25
+        stream.sample()  # blocking!
+    except KeyboardInterrupt:
+        print('KEYBOARD INTERRUPTED')
+        # return
+    except (socket.error, http.client.HTTPException):
+        global tcpip_delay
+        print('TCP/IP Error: Restarting after %.2f seconds.' % tcpip_delay)
+        time.sleep(min(tcpip_delay, MAX_TCPIP_TIMEOUT))
+        tcpip_delay += 0.25
     finally:
         stream.disconnect()
         print('Exit successful, corpus dumped in %s' % (listener.dumpfile))
 
+# def handler(signal, frame):
+        # stream.disconnect()
+        # print('Exit successful, corpus dumped in %s' % (listener.dumpfile))
+        # sys.exit(0)
 
 if __name__ == '__main__':
+    # signal.signal(signal.SIGINT, handler)
     sys.exit(main())
