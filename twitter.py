@@ -83,9 +83,10 @@ class QueueListener(StreamListener):
         self.num_handled += pcnt
 
 
-    is_zh = re.compile(r'([\p{IsHan}]+)', re.UNICODE)
+    # is_zh = re.compile(r'([\p{IsHan}]+)', re.UNICODE)
+    is_zh = re.compile(r'[一-鿐]+', re.UNICODE)
     def preprocess(self, line, cond=None):
-        line = HanziConv.toTraditional(line)
+        #line = HanziConv.toTraditional(line)
         # line = re.sub(r"\@[a-z0-9][a-z0-9]*", '', line)
         # line = re.sub(r"\#[a-z0-9][a-z0-9]*", '', line)
         # line = re.split(r"\([a-z][a-z]\)", line.lower())[0]
