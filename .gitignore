@@ -3,3 +3,7 @@ sftp-config.json
 go_*
 *.yaml
 *.yml
+.idea
+corpus
+.DS_Store
+twitter.py.orig
